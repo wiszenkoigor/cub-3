@@ -1,0 +1,29 @@
+version: 0.3
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+      - echo "Installing dependencies..."
+      - npm install
+
+  build:
+    commands:
+      - echo "Building the application..."
+      - npm run build
+
+  post_build:
+    commands:
+      - echo "Building Docker image..."
+      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - docker build -t $ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION .
+      - docker push $ECR_REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+  deploy:
+    commands:
+      - echo "Deploying to Kubernetes..."
+      - echo "Applying deployment.yaml..."
+      - kubectl apply -f deployment.yaml
+      - echo "Applying service.yaml..."
+      - kubectl apply -f service.yaml
